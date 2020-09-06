@@ -9,40 +9,40 @@ library(shiny)
 #install.packages("rmapshaper", lib = "C:/R/R-4.0.2/library")
 library(rmapshaper)
 
-# setwd("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App")
-#################################################################################################################################################
-#################################################################################################################################################
-#################################################################################################################################################
-# Load workspace
-#load("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App/FinalCombinationWorkspace.R.RData")
-
-#Load the dataframe from the folder
-#county <- readOGR(dsn=".", layer = "cb_2018_us_county_500k")
-# convert the GEOID to a character (BECAUSE TIDY CENSUS IS CHARACTER FOR SF FILE)
-#county@data$GEOID <-as.character(county@data$GEOID)
+#  setwd("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App")
+# # #################################################################################################################################################
+# # #################################################################################################################################################
+# # #################################################################################################################################################
+# # # Load workspace
+# # load("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App/FinalCombinationWorkspace.R.RData")
 # 
-# # final shape file 
-#  df.polygon <- county
+# #Load the dataframe from the folder
+# county <- readOGR(dsn=".", layer = "cb_2018_us_county_500k")
+# # convert the GEOID to a character (BECAUSE TIDY CENSUS IS CHARACTER FOR SF FILE)
+# county@data$GEOID <-as.character(county@data$GEOID)
 # # 
-# # # County shape dataframe subset this!!!
-# df.polygon2  <- df.polygon# moving variable
-# # 
-# # # Load dataframe
-#  census <- read.csv("census.csv");census <- census[-c(1)];census <- census[c(1,2,3,7,10,14)];census$GEOID <- as.character(census$GEOID)
-# 
-#      census$GEOID <-ifelse(census$state == " Alabama",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " Arkansas",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " California",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " Arizona",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " Colorado",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " Connecticut",paste("0",census$GEOID,sep =""),census$GEOID)
-#      census$GEOID <-ifelse(census$state == " Alaska",paste("0",census$GEOID,sep =""),census$GEOID)
-#  # # # 
-# # 
-# 
-# df.polygon5 <- rmapshaper::ms_simplify(df.polygon2, keep = 0.05, keep_shapes = TRUE)
-# 
-# df.polygon5@data <- left_join(df.polygon5@data, census,by = c("GEOID"),all.x = TRUE)
+# # # # final shape file 
+#    df.polygon <- county
+# # # # 
+# # # # # County shape dataframe subset this!!!
+#   df.polygon2  <- df.polygon# moving variable
+# # # # 
+# # # # # Load dataframe
+#    census <- read.csv("census.csv");census <- census[-c(1)];census <- census[c(1,2,3,7,10,14)];census$GEOID <- as.character(census$GEOID)
+# # # 
+#        census$GEOID <-ifelse(census$state == " Alabama",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " Arkansas",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " California",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " Arizona",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " Colorado",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " Connecticut",paste("0",census$GEOID,sep =""),census$GEOID)
+#        census$GEOID <-ifelse(census$state == " Alaska",paste("0",census$GEOID,sep =""),census$GEOID)
+# # #  # # # 
+# # # # 
+# # # 
+#   df.polygon5 <- rmapshaper::ms_simplify(df.polygon2, keep = 0.05, keep_shapes = TRUE)
+# # # 
+#   df.polygon5@data <- left_join(df.polygon5@data, census,by = c("GEOID"),all.x = TRUE)
 
 #######################################################################################################################
 
@@ -68,11 +68,11 @@ server <- shinyServer(function(input, output, session) {
   
 
   # This allows you to grab id or GEOID FROM MAP FOR FILTERING AND PLOTTING
-  # observeEvent(input$map_shape_click, { # update the location selectInput on map clicks
-  #   p <- input$map_shape_click
-  #   z <- input$map_shape_click$id
-  #   print(p)
-  # })
+   observeEvent(input$map_shape_click, { # update the location selectInput on map clicks
+     p <- input$map_shape_click
+     z <- input$map_shape_click$id
+     print(p)
+   })
   
   county_click <- eventReactive(input$map_shape_click, {
     x <- input$map_shape_click
