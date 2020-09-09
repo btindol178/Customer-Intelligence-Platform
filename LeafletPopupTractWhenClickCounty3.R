@@ -14,9 +14,7 @@ library(tidyr)
 library(mapview)
 
 options(tigris_use_cache = TRUE)
-
-#  stateid <- read.csv("statesid.csv");us <- stateid$state_id
-# # 
+# 
 # setwd("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App")
 # # # # # #################################################################################################################################################
 # # # # # #################################################################################################################################################
@@ -25,7 +23,7 @@ options(tigris_use_cache = TRUE)
 # # # #load("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App/FinalCombinationWorkspace.R.RData")
 # # # # 
 # # # # #Load the dataframe from the folder
-#   county <- readOGR(dsn=".", layer = "cb_2018_us_county_500k")
+#  county <- readOGR(dsn=".", layer = "cb_2018_us_county_500k")
 # # # # convert the GEOID to a character (BECAUSE TIDY CENSUS IS CHARACTER FOR SF FILE)
 #   county@data$GEOID <-as.character(county@data$GEOID)
 # # # # # 
@@ -62,26 +60,45 @@ options(tigris_use_cache = TRUE)
 #  totalpop2011 <-  "B01003_001" # population variable
 # # 
 # # # grabbing census information
-# ZIPpopulation <- get_acs(geography = "zcta",
+#  ZIPpopulation <- get_acs(geography = "zcta",
 #                           variables = totalpop2011,
 #                           year = 2011, survey = "acs5",
 #                           output = "wide", geometry = TRUE,
 #                           keep_geo_vars=TRUE)
 # # 
-# # # convert county to zip
 # 
+# # get state information
+# stateid <- read.csv("statesid.csv");us <- stateid$state_id
+# 
+# # Get information for every county and then go back and fill in the rest
+# totcountchar <- NULL;
+# for(i in 1:length(unique(us))){
+#   
+#   totalcountypop <-NULL;
+#   tryCatch({ 
+#     
+# totalcountypop <- get_estimates(geography = "county",
+#                                 product = "characteristics",
+#                                 breakdown = c("SEX", "AGEGROUP", "HISP","RACE"),
+#                                 state = us[i])
+#   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+#   
+# totcountchar <- rbind(totcountchar,totalcountypop)
+# }
+# 
+#  
 # countytozip <- read.csv("uszips.csv");colnames(countytozip)[1] <- "GEOID";countytozip$GEOID <- as.character(countytozip$GEOID);countytozip$COUNTY <- as.character(countytozip$COUNTY)
 # # 
 # zipmap <- merge(ZIPpopulation,countytozip,by=c("GEOID"),all.x=TRUE)
 # zipmap2 <- zipmap[!is.na(zipmap$county_name),]
-# # # 
-
-# DONT NEED THIS JUST YET
-# zcta <- readOGR(dsn = ".",layer = "cb_2018_us_zcta510_500k")
-# 
-# zcta@data <- left_join(zcta@data, zipmap2,by = c("GEOID10"),all.x = TRUE)
+# # #   
+# # zcta <- readOGR(dsn = ".",layer = "cb_2018_us_zcta510_500k")
+# # 
+# # zcta@data <- left_join(zcta@data, zipmap2,by = c("GEOID10"),all.x = TRUE)
 #   
-#######################################################################################################################-
+#######################################################################################################################
+
+# UI
 ui <- shinyUI(fluidPage(theme = shinytheme("united"),
                         titlePanel(HTML("<h1><center><font size=14> County Level Demographic Variables </font>
 </center></h1>")), 
@@ -91,6 +108,7 @@ ui <- shinyUI(fluidPage(theme = shinytheme("united"),
                             selectInput("VariableInput", label = h3("Variable"),
                                         choices = c("VulIndex","z_Over64","PopulationToGrowthRateRatio"))),
                           mainPanel(leafletOutput(outputId = 'map', height = 800), 
+                                    plotlyOutput("gplot", height = 800), # THis is not working yet
                                     mapview:::mapviewOutput("map2")
                                     
                                     
@@ -117,17 +135,34 @@ server <- shinyServer(function(input, output, session) {
     print(y)
   })
   
-  # output$Hist <- renderPlot({
-  #   z <- filter(census,GEOID == county_click())
-  #   hist(as.numeric(z))
-  # })
+   output$plot2 <- renderPlotly({
+     z <- filter(totcountchar,GEOID == county_click())
+     compare <- filter(totcountchar, str_detect(AGEGROUP, "^Age"),
+                       HISP != "Both Hispanic Origins",
+                       SEX != "Both sexes") %>%
+       mutate(value = ifelse(SEX == "Male", -value, value)) 
+     
+     SEX <- compare$SEX
+     AGE <- compare$AGEGROUP
+     VALUE <- compare$value
+     RACE <- compare$RACE
+     # PYRIMID PLOT POPULATION FOR EACH AGE GROUP
+     population_by_age <- plot_ly(compare,x = VALUE, y = AGE, color  = SEX, type = 'bar', orientation = 'h',
+                                  hoverinfo = 'y+text+name', text = VALUE) %>%
+       layout(bargap = 0.1, barmode = 'overlay',
+              xaxis = list(tickmode = 'array', tickvals =  c(-40000, -30000,-20000,-10000, 0,10000,20000,30000, 40000),
+                           ticktext = c(-40000, -30000,-20000,-10000, 0,10000,20000,30000, 40000))) %>% (width = 800)
+   })
+
   
   
   output$map2 <- renderLeaflet({
     z <- filter(zipmap,COUNTY == county_click())
-    mapview(z,zcol = "B01003_001E")@map
+    mapview(z,zcol = "B01003_001E")
+    mapview()@map
   })
   
+
   # selected Var
   selectedVar <- reactive({switch(input$VariableInput, 
                                   "VulIndex"=df.polygon5$VulIndex, 
@@ -137,6 +172,7 @@ server <- shinyServer(function(input, output, session) {
   pal2 <- colorNumeric(palette = "Reds", domain=NULL)
   
   output$map <- renderLeaflet({
+    
     
     leaflet(df.polygon5) %>% 
       addProviderTiles(providers$Stamen.TonerLite) %>% 
