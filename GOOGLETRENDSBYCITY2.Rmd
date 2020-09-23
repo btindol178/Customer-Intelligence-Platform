@@ -1,0 +1,64 @@
+---
+title: "Customer Intelligence"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+ 
+library(gtrendsR)
+library(leaflet)
+library(dplyr)
+#install.packages("shinycssloaders",lib = "C:/R/R-4.0.2/library")
+library(shinycssloaders)
+
+setwd("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App")
+data("countries")
+
+city_code <- function(geo){
+  codes <- unique(countries$sub_code[substr(countries$sub_code, 1,5) == geo])
+  if(length(codes) > 1){
+    countries[countries$sub_code %in% codes[2:length(codes)], 2:3]
+  } else{
+    message('No city code for this geo')
+  }
+}
+```
+
+
+# Google Trends
+
+Column {data-width=200 .sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("country", label = h5("Select Country"),choices =list("DE"="DE","AT"="AT","CH"="CH"), selected = "DE") 
+#dateRangeInput("daterange", label=h5("Date range:"), start = "2015-01-01",end = Sys.Date()-1)
+textInput("queries", label = h5("Search Queries"),width = "100%",value = 'nhl')
+
+
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Trends by city 
+
+```{r}
+
+  output$plot1 <- renderPlot({
+    df <-gtrends(input$queries,
+                       geo = input$country,
+                       time = "2015-01-19 2020-09-21")
+    plot(df)
+     
+   })
+
+
+plotOutput("plot1")
+
+ 
+```
