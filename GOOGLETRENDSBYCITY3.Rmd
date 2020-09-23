@@ -1,0 +1,113 @@
+---
+title: "Customer Intelligence"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+ 
+library(gtrendsR)
+library(leaflet)
+library(dplyr)
+#install.packages("shinycssloaders",lib = "C:/R/R-4.0.2/library")
+library(shinycssloaders)
+
+setwd("C:/Users/blake/OneDrive/Stryker Project/Country Leaflet Information Dashboard/Building Leaflet Final Interactive Map/Leaflet Map App")
+
+data("countries")
+
+uscities <- read.csv("uscities.csv")
+uscities$state_id2 <- paste("US-",uscities$state_id,sep="")
+
+
+city_code <- function(geo){
+  codes <- unique(countries$sub_code[substr(countries$sub_code, 1,5) == geo])
+  if(length(codes) > 1){
+    countries[countries$sub_code %in% codes[2:length(codes)], 2:3]
+  } else{
+    message('No city code for this geo')
+  }
+}
+```
+
+
+# Google Trends
+
+Column {data-width=200 .sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("state", label = h5("Select State"),choices =list("US-AL"="US-AL","US-MI"="US-MI","US-CA"="US-CA"), selected = "US-MI") 
+dateRangeInput("daterange", label=h5("Date range:"), start = "2015-01-01",end = Sys.Date()-1)
+textInput("queries", label = h5("Search Queries"),width = "100%",value = 'Dominos')
+
+
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Trends by city 
+
+```{r}
+
+  output$plot1 <- renderPlot({
+    df <-gtrends(input$queries,
+                       geo = input$country,
+                       time = "2015-01-19 2020-09-21")
+    plot(df)
+     
+   })
+
+
+plotOutput("plot1")
+
+ 
+```
+
+
+Column {data-width=450}
+------------------------------------------------------------------------
+
+### Geo visualiztion
+
+```{r}
+ 
+output$map1 <- renderLeaflet({
+# filter merge dataframe
+uscitiesgt <- uscities[uscities$state_id2 == input$state,]
+
+#filter for gtrends but all thistime and by city
+gt <- gtrends(input$queries ,geo = input$state,time = "all" )$interest_by_city
+gt <- data.frame(gt); colnames(gt)[1]<- "city" # rename gtrends datarame and column 1
+merge1 <-merge(uscitiesgt,gt,by = c("city"),all.x = TRUE) # merge the dataframes
+merge2 <- merge1[! is.na(merge1$hits),] # remove missing
+merge2$color <- merge2 %>%
+  mutate(color = case_when(hits <= 20 ~ 'Low',
+                                hits >= 20  & hits < 50 ~ "med",
+                                hits >= 50  & hits < 80 ~ "med high",
+                                hits >= 80 ~ "High"))
+
+pal <- colorFactor(palette = c("red","yellow","blue","green"),
+                   levels = c("Low","med","med high","High"))
+
+
+
+leaflet() %>%
+  addProviderTiles("CartoDB") %>%
+  addCircleMarkers(data = merge2,
+                   lng = ~lng,
+                   lat = ~lat,
+                   popup =  ~paste0("<b>","<Strong>","City: ",city, "<b>", "<br/>","<Strong>","Population Density: ",density,"<br/>","<b>","<Strong>","Google Searches: ",hits,"<b>"), # making bold and add break
+                   color = ~pal(merge2$color$color),
+                   radius = ~hits/10)
+
+})
+
+leafletOutput(outputId = 'map1', height = 800)
+
+```
+
